@@ -21,9 +21,9 @@ Backup the EEH Wiki to an S3 Bucket
 1. Clone repo to /root/eeh-wiki-backups: `git clone git@github.com:eehackspace/eeh-wiki-backups.git /root/eeh-wiki-backups`
 1. Install cronjob: `cp /root/eeh-wiki-backups/cron/eeh-wiki-backup-cron /etc/cron.daily`
 1. Configure mediawiki, add the following lines to /var/lib/mediawiki/LocalSettings.php
-  ```
-  # EEH Backup Settings
-  #$wgReadOnly = 'EEH-MESSAGE';
-  #$wgIgnoreImageErrors = true;
-  ```
+    ```
+    # EEH Backup Settings
+    #$wgReadOnly = 'EEH-MESSAGE';
+    #$wgIgnoreImageErrors = true;
+    ```
 1. Finish
