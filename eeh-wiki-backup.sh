@@ -65,7 +65,7 @@ az storage file upload --account-name $AZURE_STORAGE_ACCOUNT --account-key $AZUR
 az storage file upload --account-name $AZURE_STORAGE_ACCOUNT --account-key $AZURE_STORAGE_ACCESS_KEY --share-name $AZURE_SHARE_NAME --source ${BACKUP_DIR}/mariadb/${BACKUP_PREFIX}-mariadb-${DATE}.gz --path mariadb
 
 echo "** Deleting local backups older than ${KEEP_LOCAL_BACKUP_DAYS} days"
-find /opt/backup -name "*.gz" -type f -mtime +${KEEP_LOCAL_BACKUP_DAYS} -delete
+find $BACKUP_DIR -name "*.gz" -type f -mtime +${KEEP_LOCAL_BACKUP_DAYS} -delete
 
 echo
 echo " Start: ${START_TIME}"
