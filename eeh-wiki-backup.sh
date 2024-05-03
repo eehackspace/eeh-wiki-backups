@@ -2,7 +2,7 @@
 #
 # eeh-wiki-backup.sh
 #
-# Backup the EEH Wiki to an Azure File Store
+# Backup the EEH Wiki to Azure Storage
 #
 # Backs up:
 # - All wiki files
@@ -10,27 +10,24 @@
 # - Wiki in XML Format
 #
 # Requires:
-# - automysqlbackup
 # - az cli
-#
-# Notes:
-# - no backup rotation logic
 
 set -euo pipefail
 
+KEEP_LOCAL_BACKUP_DAYS=7
 START_TIME=$(date)
 DATE=$(date +%F_%H%M)
 DOW=$(date +%A)
-BACKUP_DIR="/root/eeh-wiki-backups/backups"
+BACKUP_DIR="/opt/backup"
 BACKUP_PREFIX="eeh-wiki"
-INSTALL_DIR="/var/lib/mediawiki"
-AZURE_STORAGE_ACCOUNT="eastessexbackups"
-AZURE_STORAGE_ACCESS_KEY="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+INSTALL_DIR="/opt/bitnami/mediawiki"
 
+# Include Secrets
+source secrets.inc
 
 # Based upon: https://github.com/samwilson/MediaWiki_Backup
 function export_xml {
-    XML_DUMP="${BACKUP_DIR}/${BACKUP_PREFIX}-xml-${DATE}.gz"
+    XML_DUMP="${BACKUP_DIR}/xml/${BACKUP_PREFIX}-xml-${DATE}.gz"
     echo "** Exporting XML to $XML_DUMP"
     cd "$INSTALL_DIR/maintenance"
     ## Make sure PHP is found.
@@ -45,34 +42,30 @@ function export_xml {
 }
 
 echo "** Change Wiki to Read-only mode"
-sed -i 's/EEH-MESSAGE/Daily Backup/1' ${INSTALL_DIR}/LocalSettings.php
-sed -i 's/#$wgIgnoreImageErrors/$wgIgnoreImageErrors/1' ${INSTALL_DIR}/LocalSettings.php
-sed -i 's/#$wgReadOnly/$wgReadOnly/1' ${INSTALL_DIR}/LocalSettings.php
+sed -i '/# EEH Backup Settings/{n;s/#//}' ${INSTALL_DIR}/LocalSettings.php
 
 echo "** Backing up all databases"
-automysqlbackup
+mariadb-backup --backup --target-dir=/opt/backup/mariadb/ --user=root --password=VE43ZUBgN=Ei  --stream=xbstream | gzip > ${BACKUP_DIR}/mariadb/${BACKUP_PREFIX}-mariadb-${DATE}.gz
 
-echo "** Backing up ${INSTALL_DIR} to ${BACKUP_DIR}/${BACKUP_PREFIX}-backup-${DATE}.tar.gz"
-tar czf ${BACKUP_DIR}/${BACKUP_PREFIX}-backup-${DATE}.tar.gz ${INSTALL_DIR}
+echo "** Backing up ${INSTALL_DIR} to ${BACKUP_DIR}/${BACKUP_PREFIX}-mediawiki-${DATE}.tar.gz"
+tar czf ${BACKUP_DIR}/mediawiki/${BACKUP_PREFIX}-mediawiki-${DATE}.tar.gz ${INSTALL_DIR}
 
 echo "** Backing up XML"
 export_xml
 
 echo "** Re-enable Wiki"
-sed -i 's/$wgReadOnly/#$wgReadOnly/1' ${INSTALL_DIR}/LocalSettings.php
-sed -i 's/$wgIgnoreImageErrors/#$wgIgnoreImageErrors/1' ${INSTALL_DIR}/LocalSettings.php
-sed -i 's/Daily Backup/EEH-MESSAGE/1' ${INSTALL_DIR}/LocalSettings.php
+sed -i '/# EEH Backup Settings/{n;/^\$/{s/^/#/}}' ${INSTALL_DIR}/LocalSettings.php
+
 
 echo "** Syncing Backups to Azure"
-AZURE_SHARE_NAME="backups"
-AZURE_DIRECTORY="aws"
-az storage file upload --account-name $AZURE_STORAGE_ACCOUNT --account-key $AZURE_STORAGE_ACCESS_KEY --share-name $AZURE_SHARE_NAME --source ${BACKUP_DIR}/${BACKUP_PREFIX}-backup-${DATE}.tar.gz --path $AZURE_DIRECTORY
+az storage file upload --account-name $AZURE_STORAGE_ACCOUNT --account-key $AZURE_STORAGE_ACCESS_KEY --share-name $AZURE_SHARE_NAME --source ${BACKUP_DIR}/mediawiki/${BACKUP_PREFIX}-mediawiki-${DATE}.tar.gz --path mediawiki
 
-az storage file upload --account-name $AZURE_STORAGE_ACCOUNT --account-key $AZURE_STORAGE_ACCESS_KEY --share-name $AZURE_SHARE_NAME --source ${BACKUP_DIR}/${BACKUP_PREFIX}-xml-${DATE}.gz --path $AZURE_DIRECTORY
+az storage file upload --account-name $AZURE_STORAGE_ACCOUNT --account-key $AZURE_STORAGE_ACCESS_KEY --share-name $AZURE_SHARE_NAME --source ${BACKUP_DIR}/xml/${BACKUP_PREFIX}-xml-${DATE}.gz --path xml
 
-az storage file upload --account-name $AZURE_STORAGE_ACCOUNT --account-key $AZURE_STORAGE_ACCESS_KEY --share-name $AZURE_SHARE_NAME --source /var/lib/automysqlbackup/daily/sys/sys_${DATE}.${DOW}.sql.gz --path $AZURE_DIRECTORY
+az storage file upload --account-name $AZURE_STORAGE_ACCOUNT --account-key $AZURE_STORAGE_ACCESS_KEY --share-name $AZURE_SHARE_NAME --source ${BACKUP_DIR}/mariadb/${BACKUP_PREFIX}-mariadb-${DATE}.gz --path mariadb
 
-az storage file upload --account-name $AZURE_STORAGE_ACCOUNT --account-key $AZURE_STORAGE_ACCESS_KEY --share-name $AZURE_SHARE_NAME --source /var/lib/automysqlbackup/daily/eeh_wiki/eeh_wiki_${DATE}.${DOW}.sql.gz --path $AZURE_DIRECTORY
+echo "** Deleting local backups older than ${KEEP_LOCAL_BACKUP_DAYS} days"
+find /opt/backup -name "*.gz" -type f -mtime +${KEEP_LOCAL_BACKUP_DAYS} -delete
 
 echo
 echo " Start: ${START_TIME}"

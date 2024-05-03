@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-/root/eeh-wiki-backups/eeh-wiki-backup.sh
+/opt/backup/eeh-wiki-backup.sh
