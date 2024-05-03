@@ -8,7 +8,7 @@ Backup the EEH Wiki to an Azure Filestore
 - Wiki in XML Format
 
 ## Requires
-- mariadbbackup
+- mariadb-backup (comes preinstalled with MariaDB)
 - (azure cli)[https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-linux?pivots=apt]
 
 ## Notes
