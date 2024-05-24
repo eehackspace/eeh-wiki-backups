@@ -19,7 +19,7 @@ Backup the EEH Wiki to an Azure Filestore
 1. Clone repo to /opt/backup: `git clone git@github.com:eehackspace/eeh-wiki-backups.git /opt/backup`
 1. Rename secrets.inc.example to secrets.inc `mv secrets.inc.example secrets.inc`
 1. Add the Azure storage credtentials to `secrets.inc`
-1. Install cronjob: `cp /opt/backup/cron/eeh-wiki-backup-cron /etc/cron.daily`
+1. Install cronjob: `cp /opt/backup/cron/eeh-wiki-backup-cron /etc/cron.d/`
 1. Configure mediawiki, add the following lines to /opt/bitnami/mediawiki/LocalSettings.php
     ```
     # EEH Backup Settings
