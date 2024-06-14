@@ -23,7 +23,7 @@ BACKUP_PREFIX="eeh-wiki"
 INSTALL_DIR="/opt/bitnami/mediawiki"
 
 # Include Secrets
-source secrets.inc
+source $(dirname "$0")/secrets.inc
 
 # Based upon: https://github.com/samwilson/MediaWiki_Backup
 function export_xml {
