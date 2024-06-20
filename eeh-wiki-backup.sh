@@ -31,8 +31,8 @@ function export_xml {
     echo "** Exporting XML to $XML_DUMP"
     cd "$INSTALL_DIR/maintenance"
     ## Make sure PHP is found.
-    if hash php 2>/dev/null; then
-        php -d error_reporting=E_ERROR dumpBackup.php \
+    if hash /opt/bitnami/php/bin/php 2>/dev/null; then
+        /opt/bitnami/php/bin/php -d error_reporting=E_ERROR dumpBackup.php \
             --conf="$INSTALL_DIR/LocalSettings.php" \
             --quiet --full --logs --uploads \
             | gzip -9 > "$XML_DUMP"
@@ -45,7 +45,7 @@ echo "** Change Wiki to Read-only mode"
 sed -i '/# EEH Backup Settings/{n;s/#//}' ${INSTALL_DIR}/LocalSettings.php
 
 echo "** Backing up all databases"
-mariadb-backup --backup --target-dir=/opt/backup/mariadb/ --user=root --password=VE43ZUBgN=Ei  --stream=xbstream | gzip > ${BACKUP_DIR}/mariadb/${BACKUP_PREFIX}-mariadb-${DATE}.gz
+/opt/bitnami/mariadb/bin/mariadb-backup --backup --target-dir=/opt/backup/mariadb/ --user=root --password=VE43ZUBgN=Ei  --stream=xbstream | gzip > ${BACKUP_DIR}/mariadb/${BACKUP_PREFIX}-mariadb-${DATE}.gz
 
 echo "** Backing up ${INSTALL_DIR} to ${BACKUP_DIR}/${BACKUP_PREFIX}-mediawiki-${DATE}.tar.gz"
 tar czf ${BACKUP_DIR}/mediawiki/${BACKUP_PREFIX}-mediawiki-${DATE}.tar.gz ${INSTALL_DIR}
