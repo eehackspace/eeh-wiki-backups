@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-/root/eeh-wiki-backups/eeh-wiki-backup.sh
+15 5 * * * root bash /opt/backup/eeh-wiki-backup.sh > /var/log/eeh-backup.log 2>&1
